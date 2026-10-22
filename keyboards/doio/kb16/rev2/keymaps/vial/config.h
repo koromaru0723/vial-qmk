@@ -9,3 +9,9 @@
 #define COMBO_MUST_PRESS_IN_ORDER
 #define VIAL_COMBO_ENTRIES 12
 /*#define DYNAMIC_KEYMAP_MACRO_EEPROM_SIZE 1280 */
+
+// VialRGB が制御する対象を RGB_MATRIX に指定
+#define VIALRGB_NO_DIRECT
+
+//oledのタイムアウト
+#define OLED_TIMEOUT 0

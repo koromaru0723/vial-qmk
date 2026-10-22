@@ -35,6 +35,8 @@ OLED_DRIVER = ssd1306
 # RGB Matrix enabled
 RGB_MATRIX_ENABLE = yes
 RGB_MATRIX_DRIVER = ws2812
+WS2812_DRIVER = bitbang
+
 
 # Encoder enabled
 ENCODER_ENABLE = yes

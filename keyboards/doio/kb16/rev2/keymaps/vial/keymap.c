@@ -123,11 +123,33 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 };
 
 #ifdef OLED_ENABLE
-    bool oled_task_user(void) {
-        render_layer_status();
+// 外部ファイル（lib/logo.c）のロゴ描画関数を呼び出す宣言
+extern void render_logo(void);
 
-        return true;
+static uint32_t boot_logo_timer = 0;
+static bool show_boot_logo = false;
+
+// キーボード初期化完了時（2回目の接続完了直後）に呼ばれる
+void keyboard_post_init_user(void) {
+    boot_logo_timer = timer_read32();
+    show_boot_logo = true;
+}
+
+bool oled_task_user(void) {
+    // 初期化完了後、指定ミリ秒（例: 3000ms = 3秒間）ロゴを表示
+    if (show_boot_logo) {
+        if (timer_elapsed32(boot_logo_timer) < 3000) {
+            render_logo();
+            return false;
+        } else {
+            show_boot_logo = false;
+        }
     }
+
+    // ロゴ表示終了後は通常のレイヤー表示
+    render_layer_status();
+    return false;
+}
 #endif
 
 #ifdef ENCODER_MAP_ENABLE
@@ -138,3 +160,52 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][2] = {
     [_FN2]  = { ENCODER_CCW_CW(KC_TRNS, KC_TRNS), ENCODER_CCW_CW(KC_TRNS, KC_TRNS), ENCODER_CCW_CW(KC_TRNS, KC_TRNS) },
 };
 #endif
+
+
+#ifdef OLED_ENABLE
+// 待機時間（ミリ秒）: 例として1分（60000ms）
+#define OLED_DIM_TIMEOUT 60000
+
+// 通常時と減光時の明るさ（0〜255）
+#define OLED_BRIGHTNESS_ACTIVE 120
+#define OLED_BRIGHTNESS_DIM    10
+
+static bool is_oled_dimmed = false;
+static uint32_t oled_activity_timer = 0;
+
+// レイヤー変更キー（MO, TO, TG, DFなど何でも）が発動した瞬間に呼ばれる
+layer_state_t layer_state_set_user(layer_state_t state) {
+    // 最後に操作した時刻を現在時刻に更新
+    oled_activity_timer = timer_read32();
+    
+    // 減光中であれば即座に通常輝度に戻す
+    if (is_oled_dimmed) {
+        oled_set_brightness(OLED_BRIGHTNESS_ACTIVE);
+        is_oled_dimmed = false;
+    }
+    return state;
+}
+
+// 毎フレーム呼ばれる監視タスク
+void housekeeping_task_user(void) {
+    // 通常のキー打鍵、またはレイヤー変更からの経過時間を判定
+    uint32_t last_input = last_input_activity_elapsed();
+    uint32_t last_layer = timer_elapsed32(oled_activity_timer);
+    
+    // どちらか直近の操作からの経過時間を採用
+    uint32_t elapsed = (last_input < last_layer) ? last_input : last_layer;
+
+    if (elapsed > OLED_DIM_TIMEOUT) {
+        if (!is_oled_dimmed) {
+            oled_set_brightness(OLED_BRIGHTNESS_DIM);
+            is_oled_dimmed = true;
+        }
+    } else {
+        if (is_oled_dimmed) {
+            oled_set_brightness(OLED_BRIGHTNESS_ACTIVE);
+            is_oled_dimmed = false;
+        }
+    }
+}
+#endif
+
