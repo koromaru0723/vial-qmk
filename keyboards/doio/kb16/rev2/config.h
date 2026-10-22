@@ -37,7 +37,7 @@
 #define DEBOUNCE 5
 
 /* Forcing to use NKRO instead 6KRO */
-#define NKRO_DEFAULT_ON
+#define NKRO_DEFAULT_ON true
 
 #ifdef OLED_ENABLE
     /* Mapping I2C2 for OLED */
