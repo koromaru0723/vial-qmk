@@ -94,3 +94,9 @@
     #define ENABLE_RGB_MATRIX_MULTISPLASH
     #define ENABLE_RGB_MATRIX_SOLID_MULTISPLASH
 #endif
+
+// Flash書き込み時・起動時のEEPROM強制初期化を無効化
+#define NO_RESET_EEPROM
+
+// EEPROMエミュレーションのページサイズをSTM32F103（1KBセクタ）に明示
+#define DYNAMIC_KEYMAP_EEPROM_MAX_ADDR 2047
