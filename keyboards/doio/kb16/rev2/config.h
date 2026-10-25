@@ -102,3 +102,18 @@
 #define DYNAMIC_KEYMAP_EEPROM_MAX_ADDR 2047
 #define DYNAMIC_KEYMAP_LAYER_COUNT 12
 
+// --- Tap Dance の登録数を変更 ---
+// デフォルトは 8 または 16
+#define VIAL_TAP_DANCE_ENTRIES 32
+
+// --- コンボ（同時押し）の登録数を変更 ---
+// デフォルトは 8 または 16
+#define VIAL_COMBO_ENTRIES 16
+
+// --- マクロ機能の設定 ---
+// マクロの個数（デフォルトは 16）
+#define DYNAMIC_KEYMAP_MACRO_COUNT 32
+
+// マクロに保存できる総容量（バイト数）
+// デフォルトは通常 512〜1024 バイト程度
+#define DYNAMIC_KEYMAP_MACRO_EEPROM_SIZE 1024
