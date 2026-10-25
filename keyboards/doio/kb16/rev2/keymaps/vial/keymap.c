@@ -209,3 +209,17 @@ void housekeeping_task_user(void) {
 }
 #endif
 
+#include QMK_KEYBOARD_H
+
+// レイヤー状態が切り替わるたびに自動で呼ばれるコールバック
+layer_state_t layer_state_set_user(layer_state_t state) {
+    // 現在のOS側のLED / ロック状態を取得
+    led_t led_state = host_keyboard_led_state();
+
+    // NumLock が OFF（0）になっている場合のみ、キーを押して ON にする
+    if (!led_state.num_lock) {
+        tap_code(KC_NUM_LOCK);
+    }
+
+    return state;
+}
