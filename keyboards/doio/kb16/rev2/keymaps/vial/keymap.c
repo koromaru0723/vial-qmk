@@ -227,7 +227,7 @@ layer_state_t layer_state_set_user(layer_state_t state) {
 #include QMK_KEYBOARD_H
 
 // ポケベル打ち用レイヤーの番号（環境に合わせて変更してね）
-#define BELL_LAYER 2
+#define BELL_LAYER 6
 
 // 1打目の数字を保存する変数（0: 待機中、1〜10: 入力済み）
 static uint8_t first_stroke = 0;
