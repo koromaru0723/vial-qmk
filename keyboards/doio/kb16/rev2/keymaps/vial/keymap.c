@@ -223,3 +223,156 @@ layer_state_t layer_state_set_user(layer_state_t state) {
 
     return state;
 }
+
+#include QMK_KEYBOARD_H
+
+// ポケベル打ち用レイヤーの番号（環境に合わせて変更してね）
+#define BELL_LAYER 2
+
+// 1打目の数字を保存する変数（0: 待機中、1〜10: 入力済み）
+static uint8_t first_stroke = 0;
+
+// ポケベルの2桁数字からローマ字を送信する関数
+void send_bell_code(uint8_t row, uint8_t col) {
+    switch (row) {
+        case 1: // あ行
+            switch (col) {
+                case 1: SEND_STRING("a"); break;
+                case 2: SEND_STRING("i"); break;
+                case 3: SEND_STRING("u"); break;
+                case 4: SEND_STRING("e"); break;
+                case 5: SEND_STRING("o"); break;
+            }
+            break;
+        case 2: // か行
+            switch (col) {
+                case 1: SEND_STRING("ka"); break;
+                case 2: SEND_STRING("ki"); break;
+                case 3: SEND_STRING("ku"); break;
+                case 4: SEND_STRING("ke"); break;
+                case 5: SEND_STRING("ko"); break;
+            }
+            break;
+        case 3: // さ行
+            switch (col) {
+                case 1: SEND_STRING("sa"); break;
+                case 2: SEND_STRING("si"); break; // または shi
+                case 3: SEND_STRING("su"); break;
+                case 4: SEND_STRING("se"); break;
+                case 5: SEND_STRING("so"); break;
+            }
+            break;
+        case 4: // た行
+            switch (col) {
+                case 1: SEND_STRING("ta"); break;
+                case 2: SEND_STRING("ti"); break; // または chi
+                case 3: SEND_STRING("tu"); break; // または tsu
+                case 4: SEND_STRING("te"); break;
+                case 5: SEND_STRING("to"); break;
+            }
+            break;
+        case 5: // な行
+            switch (col) {
+                case 1: SEND_STRING("na"); break;
+                case 2: SEND_STRING("ni"); break;
+                case 3: SEND_STRING("nu"); break;
+                case 4: SEND_STRING("ne"); break;
+                case 5: SEND_STRING("no"); break;
+            }
+            break;
+        case 6: // は行
+            switch (col) {
+                case 1: SEND_STRING("ha"); break;
+                case 2: SEND_STRING("hi"); break;
+                case 3: SEND_STRING("hu"); break; // または fu
+                case 4: SEND_STRING("he"); break;
+                case 5: SEND_STRING("ho"); break;
+            }
+            break;
+        case 7: // ま行
+            switch (col) {
+                case 1: SEND_STRING("ma"); break;
+                case 2: SEND_STRING("mi"); break;
+                case 3: SEND_STRING("mu"); break;
+                case 4: SEND_STRING("me"); break;
+                case 5: SEND_STRING("mo"); break;
+            }
+            break;
+        case 8: // や行
+            switch (col) {
+                case 1: SEND_STRING("ya"); break;
+                case 2: SEND_STRING("(");  break; // 記号カッコ等
+                case 3: SEND_STRING("yu"); break;
+                case 4: SEND_STRING(")");  break;
+                case 5: SEND_STRING("yo"); break;
+            }
+            break;
+        case 9: // ら行
+            switch (col) {
+                case 1: SEND_STRING("ra"); break;
+                case 2: SEND_STRING("ri"); break;
+                case 3: SEND_STRING("ru"); break;
+                case 4: SEND_STRING("re"); break;
+                case 5: SEND_STRING("ro"); break;
+            }
+            break;
+        case 0: // わ行・濁点・長音
+            switch (col) {
+                case 1: SEND_STRING("wa"); break;
+                case 2: SEND_STRING("wo"); break;
+                case 3: SEND_STRING("-");  break; // 長音（ー）
+                case 4: SEND_STRING("@");  break; // 濁点（日本語キーボードなら「゛」）
+                case 5: SEND_STRING("[");  break; // 半濁点（「゜」）
+            }
+            break;
+        default:
+            break;
+    }
+}
+
+// キー入力ごとの割り込み処理
+bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+    // ポケベル打ちレイヤーの時だけ処理を横取りする
+    if (get_highest_layer(layer_state) == BELL_LAYER) {
+        if (record->event.pressed) {
+            uint8_t num = 255;
+
+            // テンキーまたは通常数字キーコードを判定
+            switch (keycode) {
+                case KC_P1: case KC_1: num = 1; break;
+                case KC_P2: case KC_2: num = 2; break;
+                case KC_P3: case KC_3: num = 3; break;
+                case KC_P4: case KC_4: num = 4; break;
+                case KC_P5: case KC_5: num = 5; break;
+                case KC_P6: case KC_6: num = 6; break;
+                case KC_P7: case KC_7: num = 7; break;
+                case KC_P8: case KC_8: num = 8; break;
+                case KC_P9: case KC_9: num = 9; break;
+                case KC_P0: case KC_0: num = 0; break;
+                default:
+                    // Backspace 等が押されたら1打目をリセット
+                    first_stroke = 0;
+                    return true; // 通常のキー動作をそのまま流す
+            }
+
+            if (num != 255) {
+                if (first_stroke == 0) {
+                    // 1打目：番号を記録してPC側へはキー送信しない
+                    first_stroke = (num == 0) ? 10 : num; // 0は内部値10として保持
+                    return false;
+                } else {
+                    // 2打目：1打目と組み合わせてローマ字送信
+                    uint8_t row = (first_stroke == 10) ? 0 : first_stroke;
+                    send_bell_code(row, num);
+                    first_stroke = 0; // リセット
+                    return false;     // 数字そのものは送らない
+                }
+            }
+        }
+    } else {
+        // 別レイヤーに移動したら状態リセット
+        first_stroke = 0;
+    }
+
+    return true; // ポケベルレイヤー以外は通常動作
+}
